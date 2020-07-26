@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <script
+      type="text/javascript"
+      src="https://cdn.bootcdn.net/ajax/libs/echarts/4.8.0/echarts.min.js"
+    ></script>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+  </head>
+
+  <body>
+    <div id="chart_day" style="width: 100%; height: 90vh;"></div>
+    <div id="chart_commit" style="width: 100%; height: 90vh;"></div>
+    <script type="text/javascript">
+      // 基于准备好的dom，初始化echarts实例
+      var chartDay = echarts.init(document.getElementById("chart_day"));
+      var chartCommit = echarts.init(document.getElementById("chart_commit"));
+
+      // 指定图表的配置项和数据
+      var option_day = {
+        baseOption: {
+          timeline: {
+            axisType: "category",
+            autoPlay: false,
+            data: {{ users }},
+          },
+          legend: {},
+          tooltip: {
+            /*position: function (pos, params, dom, rect, size) {
+                // 鼠标在左侧时 tooltip 显示到右侧，鼠标在右侧时 tooltip 显示到左侧。
+                var obj = {top: 60};
+                obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 5;
+                return obj;
+            },*/
+            formatter: function (param, ticket, callback) {
+              console.log(param);
+              if (param.componentType === "markLine") {
+                return param.marker+param.name+':'+param.value+'<br/>';
+              }
+              function commitStr(commit) {
+                return 'hashes:' + commit[0] + '<br/>' + '提交内容:' + commit[3] + '<br/>' + '提交时间:' + commit[2] + '<br/>'
+              }
+              content = [
+                  param.dimensionNames[param.encode.x[0]] + ': ' + param.data[param.encode.x[0]] + '<br/>',
+                  param.dimensionNames[param.encode.y[0]] + ': ' + param.data[param.encode.y[0]] + '<br/>',
+                  '<hr size=1 style="margin: 3px 0">','Data: <br/>',
+              ]
+              content = content.concat(param.data[0].map(commitStr));
+
+              return content.join('');
+            },
+          },
+          dataZoom: [
+            {
+              show: true,
+              type: 'slider',
+              startValue: "{{ date_list[-7] }}",
+              endValue: "{{ date_list[-1] }}",
+              bottom: 50,
+            },
+          ],
+          toolbox: {
+            feature: {
+              dataZoom: {
+                yAxisIndex: "none",
+              },
+            },
+          },
+          xAxis: {
+            type: "category",
+            data: {{ date_list }},
+            axisLabel: {
+              rotate: -90,
+            },
+          },
+          yAxis: {
+            splitLine: {
+                show: false
+            },
+          },
+          grid: {
+            bottom: 160
+          },
+          series: [
+            {
+              name: "{{ dimensions_day[1] }}",
+              type: "bar",
+              encode: {
+                  x: 4,
+                  y: 1,
+              },
+              markLine: {
+                data: [
+                  {
+                    name: "平均{{ dimensions_day[1] }}",
+                    type: "average",
+                  },
+                ],
+              },
+            },
+            {
+              name: "{{ dimensions_day[2] }}",
+              type: "bar",
+              encode: {
+                  x: 4,
+                  y: 2,
+              },
+            },
+            {
+              name: "{{ dimensions_day[3] }}",
+              type: "bar",
+              encode: {
+                  x: 4,
+                  y: 3,
+              },
+              barGap: "-100%",
+              markLine: {
+                data: [
+                  {
+                    name: "平均{{ dimensions_day[3] }}",
+                    type: "average",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        options: [
+          {% for data in datas_day -%}
+          {
+            title: {
+            text: "{{ users[loop.index0] }}的git提交情况统计",
+            subtext: "",
+            },
+            dataset: {
+              dimensions: {{ dimensions_day }},              
+              source: {{ data }}
+            },
+          },
+          {% endfor %}
+        ],
+      };
+
+      // 使用刚指定的配置项和数据显示图表。
+      chartDay.setOption(option_day);
+
+      var option_commit = {
+        tooltip: {},
+        dataZoom: [
+          {
+              show: true,
+              type: 'slider',
+              startValue: "{{ date_list[-7] }}",
+              endValue: "{{ date_list[-1] }}",              
+              bottom: 50,
+          },
+        ],
+        toolbox: {
+          feature: {
+            dataZoom: {
+              yAxisIndex: "none",
+            },
+          },
+        },
+        xAxis: {
+          type: "time",
+        },
+        yAxis: {
+          type: "category",
+          data: {{ users }},
+        },
+        dataset: {
+          dimensions: {{ dimensions }},
+          source: {{ data_list }}
+        },
+        series: [
+        {
+          name: "{{ dimensions[1] }}",
+          type: "scatter",
+          encode: {
+              x: 2,
+              y: 1,
+          },
+        }
+        ],
+      }
+
+      chartCommit.setOption(option_commit);
+    </script>
+  </body>
+</html>
